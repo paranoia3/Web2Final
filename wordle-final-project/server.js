@@ -1,21 +1,25 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const path = require('path');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-try {
-  require('./src/config/db');
-} catch (err) {
-  console.error("Ошибка: Не найден файл подключения к БД в ./src/config/db");
-}
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://Erkegali:Erkegali123@cluster0.c28yytf.mongodb.net/')
+    .then(() => console.log('✅ Connected to MongoDB'))
+    .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`Сервер запущен: http://localhost:${PORT}`);
+  console.log(`🚀 Server started: http://localhost:${PORT}`);
 });
