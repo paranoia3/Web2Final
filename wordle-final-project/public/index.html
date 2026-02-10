@@ -1,112 +1,89 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wordle (Final Project)</title>
-  <meta name="color-scheme" content="dark light">
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wordle Game</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
 </head>
 <body>
-<header class="header">
-  <div class="headerInner">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">W</div>
-      <div class="brandText">
-        <h1>WELCOME TO WORLDE GAME🙌</h1>
-      </div>
-    </div>
 
-    <div class="headerActions">
-      <button id="themeToggle" class="iconBtn" type="button" aria-label="Toggle dark/light mode">
-        <span class="icon iconSun" aria-hidden="true">☀️</span>
-        <span class="icon iconMoon" aria-hidden="true">🌙</span>
-      </button>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">W</div>
+      <h1>WORDLE GAME</h1>
     </div>
+    <button id="themeToggle" class="icon-btn">☀️</button>
   </div>
 </header>
 
 <main class="container">
-  <section class="card" id="authCard">
-    <div class="cardHeader">
-      <div>
-        <h2>Welcome</h2>
-        <p class="muted">Login to continue, or create a new account.</p>
-      </div>
+
+  <section id="authCard" class="card">
+    <div class="card-header">
+      <h2>Welcome</h2>
+      <p class="muted">Please login to play.</p>
     </div>
 
-    <div class="tabs" role="tablist" aria-label="Authentication tabs">
-      <button id="tabLogin" class="tab active" type="button" role="tab" aria-selected="true">Login</button>
-      <button id="tabRegister" class="tab" type="button" role="tab" aria-selected="false">Register</button>
+    <div class="tabs">
+      <button id="tabLogin" class="tab active">Login</button>
+      <button id="tabRegister" class="tab">Register</button>
     </div>
 
     <form id="loginForm" class="form">
-      <label>Email
-        <input type="email" name="email" placeholder="you@example.com" required />
-      </label>
-      <label>Password
-        <input type="password" name="password" minlength="8" placeholder="••••••••" required />
-      </label>
-      <button type="submit" class="primary">Login</button>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" name="password" required>
+      </div>
+      <button type="submit" class="btn-primary">Login</button>
     </form>
 
     <form id="registerForm" class="form hidden">
-      <label>Username
-        <input type="text" name="username" minlength="2" placeholder="yourname" required />
-      </label>
-      <label>Email
-        <input type="email" name="email" placeholder="you@example.com" required />
-      </label>
-      <label>Password
-        <input type="password" name="password" minlength="8" placeholder="at least 8 characters" required />
-      </label>
-      <button type="submit" class="primary">Create account</button>
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" name="username" required>
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" name="password" required>
+      </div>
+      <button type="submit" class="btn-primary">Create Account</button>
     </form>
-
-    <p id="authMsg" class="msg" role="status" aria-live="polite"></p>
+    <p id="authMsg" class="msg"></p>
   </section>
 
-  <section class="card hidden" id="appCard">
-    <div class="row space">
+  <section id="appCard" class="card hidden">
+    <div class="game-header-row">
       <div>
         <h2>Play</h2>
-        <p class="muted" id="userLine"></p>
+        <p id="userLine" class="muted">Player: ...</p>
       </div>
-      <div class="row">
-        <button id="logoutBtn" class="ghost" type="button">Logout</button>
-      </div>
+      <button id="logoutBtn" class="btn-ghost">Logout ➜</button>
     </div>
 
     <div class="toolbar">
-      <div class="toolbarLeft">
-        <button id="newRandomBtn" class="secondary" type="button">New Game (Random)</button>
-        <button id="newDailyBtn" class="secondary" type="button">New Game (Daily)</button>
-      </div>
-      <div class="toolbarRight">
-        <span class="pill" id="statusPill">Status: —</span>
-        <span class="pill" id="attemptsPill">Attempts: —</span>
-      </div>
+      <button id="newGameBtn" class="btn-secondary">New Game</button>
+      <span class="pill" id="gameStatus">Playing...</span>
     </div>
 
-    <div class="boardWrap">
-      <div class="board" id="board" aria-label="Wordle board"></div>
+    <div class="board-wrap">
+      <div id="board" class="board"></div>
     </div>
 
-    <div class="row">
-      <button id="guessBtn" class="primary" type="button">Submit Guess</button>
-      <span class="muted">Type directly in the tiles above (or press Enter).</span>
-    </div>
-
-    <p id="gameMsg" class="msg" role="status" aria-live="polite"></p>
+    <p class="muted" style="text-align: center;">Type on keyboard</p>
+    <p id="gameMsg" class="msg"></p>
   </section>
+
 </main>
-
-<footer class="footer">
-  <p>Wordle Game ©2026 All Rights Reserved </p>
-</footer>
-
-<div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
-
-<script src="app.js"></script>
 </body>
 </html>

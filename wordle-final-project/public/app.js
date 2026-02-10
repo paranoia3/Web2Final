@@ -1,167 +1,160 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // --- ЧАСТЬ 1: АВТОРИЗАЦИЯ (Оставляем как было) ---
+  console.log("🚀 App Started");
+
+  // Ссылки на элементы
+  const authCard = document.getElementById('authCard');
+  const appCard = document.getElementById('appCard');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
-  const authMsg = document.getElementById('authMsg');
   const tabLogin = document.getElementById('tabLogin');
   const tabRegister = document.getElementById('tabRegister');
-  const logoutBtn = document.getElementById('logoutBtn');
+  const authMsg = document.getElementById('authMsg');
 
-  // Проверка, вошел ли пользователь (из LocalStorage)
+  // Игра
+  const logoutBtn = document.getElementById('logoutBtn');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const boardDiv = document.getElementById('board');
+  const gameMsg = document.getElementById('gameMsg');
+  const themeBtn = document.getElementById('themeToggle');
+
+  // 1. Проверка входа
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
-    showGameInterface(JSON.parse(storedUser));
+    try {
+      const user = JSON.parse(storedUser);
+      showGame(user);
+    } catch (e) { localStorage.removeItem('user'); showAuth(); }
+  } else {
+    showAuth();
   }
 
-  // Переключение табов
-  if(tabLogin) {
-    tabLogin.addEventListener('click', () => {
-      loginForm.classList.remove('hidden');
-      registerForm.classList.add('hidden');
-      tabLogin.classList.add('active');
-      tabRegister.classList.remove('active');
-      authMsg.textContent = '';
-    });
+  // 2. Функции переключения
+  function showAuth() {
+    authCard.classList.remove('hidden');
+    appCard.classList.add('hidden');
+    document.removeEventListener('keydown', handleKey);
   }
 
-  if(tabRegister) {
-    tabRegister.addEventListener('click', () => {
-      registerForm.classList.remove('hidden');
-      loginForm.classList.add('hidden');
-      tabRegister.classList.add('active');
-      tabLogin.classList.remove('active');
-      authMsg.textContent = '';
-    });
+  function showGame(user) {
+    authCard.classList.add('hidden');
+    appCard.classList.remove('hidden');
+    document.getElementById('userLine').textContent = `Player: ${user.username}`;
+
+    // ВАЖНО: Запуск игры с небольшой задержкой, чтобы успела отрисоваться карточка
+    setTimeout(initGame, 50);
   }
 
-  // Логика регистрации
-  if (registerForm) {
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(registerForm);
-      const data = Object.fromEntries(formData.entries());
-
-      try {
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        if (response.ok) {
-          authMsg.style.color = '#4ade80'; // Green
-          authMsg.textContent = 'Success! Please login.';
-          setTimeout(() => tabLogin.click(), 1500);
-        } else {
-          authMsg.style.color = '#f87171'; // Red
-          authMsg.textContent = result.message || 'Registration failed';
-        }
-      } catch (err) { console.error(err); }
-    });
-  }
-
-  // Логика входа
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(loginForm);
-      const data = Object.fromEntries(formData.entries());
-
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        const result = await response.json();
-
-        if (response.ok) {
-          localStorage.setItem('user', JSON.stringify(result.user));
-          showGameInterface(result.user);
-        } else {
-          authMsg.style.color = '#f87171';
-          authMsg.textContent = result.message || 'Login failed';
-        }
-      } catch (err) { authMsg.textContent = 'Network error.'; }
-    });
-  }
-
-  // Логика выхода
+  // 3. Logout
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('user');
-      location.reload();
+      location.reload(); // Перезагружаем страницу для чистого выхода
     });
   }
 
-  function showGameInterface(user) {
-    document.getElementById('authCard').classList.add('hidden');
-    document.getElementById('appCard').classList.remove('hidden');
-    document.getElementById('userLine').textContent = `Player: ${user.username}`;
-    // ЗАПУСК ИГРЫ
-    initGame();
-  }
+  // 4. Логика форм
+  tabLogin.addEventListener('click', () => {
+    loginForm.classList.remove('hidden');
+    registerForm.classList.add('hidden');
+    tabLogin.classList.add('active');
+    tabRegister.classList.remove('active');
+  });
 
+  tabRegister.addEventListener('click', () => {
+    registerForm.classList.remove('hidden');
+    loginForm.classList.add('hidden');
+    tabRegister.classList.add('active');
+    tabLogin.classList.remove('active');
+  });
 
-  // --- ЧАСТЬ 2: ЛОГИКА ИГРЫ (НОВОЕ!) ---
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(loginForm));
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.ok) {
+        localStorage.setItem('user', JSON.stringify(result.user));
+        showGame(result.user);
+      } else {
+        authMsg.textContent = result.message;
+        authMsg.style.color = 'red';
+      }
+    } catch (err) { console.error(err); }
+  });
 
-  const board = document.getElementById('board');
-  const secretWord = "WORLD"; // Пока хардкод для теста (5 букв)
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(registerForm));
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        authMsg.textContent = "Success! Login now.";
+        authMsg.style.color = "green";
+        setTimeout(() => tabLogin.click(), 1000);
+      } else {
+        authMsg.textContent = "Error registering";
+        authMsg.style.color = "red";
+      }
+    } catch (err) { console.error(err); }
+  });
+
+  // 5. ИГРОВАЯ ЛОГИКА
+  const secretWord = "WORLD";
   let currentRow = 0;
   let currentTile = 0;
   const rows = 6;
   const cols = 5;
-  let guesses = [
-    ["", "", "", "", ""],
-    ["", "", "", "", ""],
-    ["", "", "", "", ""],
-    ["", "", "", "", ""],
-    ["", "", "", "", ""],
-    ["", "", "", "", ""]
-  ];
+  let guesses = [];
+  let isGameOver = false;
 
   function initGame() {
-    createBoard();
-    document.addEventListener('keydown', handleKey);
-    console.log("Game initialized!");
-  }
+    console.log("Game Init...");
+    currentRow = 0;
+    currentTile = 0;
+    isGameOver = false;
+    guesses = Array(6).fill(null).map(() => Array(5).fill(""));
+    gameMsg.textContent = "";
 
-  // 1. Создание сетки 6x5
-  function createBoard() {
-    board.innerHTML = ''; // Очистить, если было что-то
-    // Мы используем CSS Grid, поэтому просто добавляем 30 дивов
+    // Строим сетку
+    boardDiv.innerHTML = '';
     for (let r = 0; r < rows; r++) {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'game-row';
       for (let c = 0; c < cols; c++) {
         const tile = document.createElement('div');
+        tile.className = 'tile';
         tile.id = `tile-${r}-${c}`;
-        tile.classList.add('tile'); // Класс для стилей
-        board.appendChild(tile);
+        rowDiv.appendChild(tile);
       }
+      boardDiv.appendChild(rowDiv);
     }
+
+    document.removeEventListener('keydown', handleKey);
+    document.addEventListener('keydown', handleKey);
   }
 
-  // 2. Обработка нажатий клавиш
   function handleKey(e) {
+    if (isGameOver) return;
     const key = e.key.toUpperCase();
-
-    if (key === 'ENTER') {
-      checkGuess();
-      return;
-    }
-    if (key === 'BACKSPACE') {
-      deleteLetter();
-      return;
-    }
-    if (key.length === 1 && key >= 'A' && key <= 'Z') {
-      addLetter(key);
-    }
+    if (key === 'ENTER') submitGuess();
+    else if (key === 'BACKSPACE') deleteLetter();
+    else if (key.length === 1 && key >= 'A' && key <= 'Z') addLetter(key);
   }
 
   function addLetter(letter) {
-    if (currentTile < 5 && currentRow < 6) {
+    if (currentTile < cols && currentRow < rows) {
       const tile = document.getElementById(`tile-${currentRow}-${currentTile}`);
       tile.textContent = letter;
-      tile.classList.add('active'); // Анимация ввода
+      tile.classList.add('active');
       guesses[currentRow][currentTile] = letter;
       currentTile++;
     }
@@ -172,41 +165,36 @@ document.addEventListener('DOMContentLoaded', () => {
       currentTile--;
       const tile = document.getElementById(`tile-${currentRow}-${currentTile}`);
       tile.textContent = '';
+      tile.classList.remove('active');
       guesses[currentRow][currentTile] = '';
     }
   }
 
-  function checkGuess() {
-    if (currentTile !== 5) {
-      showMessage("Not enough letters!");
-      return;
-    }
+  function submitGuess() {
+    if (currentTile !== cols) return;
 
     const guess = guesses[currentRow].join("");
 
-    // Анимация проверки (покраска)
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < cols; i++) {
       const tile = document.getElementById(`tile-${currentRow}-${i}`);
       const letter = guess[i];
-
-      // Логика цветов
       setTimeout(() => {
-        if (letter === secretWord[i]) {
-          tile.classList.add('correct'); // Зеленый
-        } else if (secretWord.includes(letter)) {
-          tile.classList.add('present'); // Желтый
-        } else {
-          tile.classList.add('absent'); // Серый
-        }
-      }, i * 200); // Задержка для красоты
+        tile.classList.remove('active');
+        if (letter === secretWord[i]) tile.classList.add('correct');
+        else if (secretWord.includes(letter)) tile.classList.add('present');
+        else tile.classList.add('absent');
+      }, i * 200);
     }
 
     if (guess === secretWord) {
-      showMessage("YOU WON! 🎉");
-      document.removeEventListener('keydown', handleKey);
+      gameMsg.textContent = "VICTORY! 🎉";
+      gameMsg.style.color = "#22c55e";
+      isGameOver = true;
     } else {
-      if (currentRow >= 5) {
-        showMessage(`Game Over! Word was: ${secretWord}`);
+      if (currentRow >= rows - 1) {
+        gameMsg.textContent = "GAME OVER";
+        gameMsg.style.color = "red";
+        isGameOver = true;
       } else {
         currentRow++;
         currentTile = 0;
@@ -214,22 +202,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function showMessage(msg) {
-    const msgBox = document.getElementById('gameMsg');
-    msgBox.textContent = msg;
-    setTimeout(() => msgBox.textContent = '', 3000);
-  }
+  newGameBtn.addEventListener('click', initGame);
 
-  // Кнопка "New Game"
-  const newGameBtn = document.getElementById('newRandomBtn');
-  if(newGameBtn) {
-    newGameBtn.addEventListener('click', () => {
-      currentRow = 0;
-      currentTile = 0;
-      guesses = Array(6).fill(null).map(() => Array(5).fill(""));
-      createBoard();
-      document.addEventListener('keydown', handleKey);
-      showMessage("New Game Started!");
-    });
-  }
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+  });
 });

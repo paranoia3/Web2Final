@@ -1,11 +1,15 @@
+// server/models/Game.js
 const mongoose = require('mongoose');
 
 const GameSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false // Можно сохранить даже если пользователь не залогинен (опционально)
+    },
     word: { type: String, required: true },
-    guesses: [String],
-    status: { type: String, enum: ['win', 'loss'], required: true },
     attempts: { type: Number, required: true },
+    isWin: { type: Boolean, required: true },
     date: { type: Date, default: Date.now }
 });
 
