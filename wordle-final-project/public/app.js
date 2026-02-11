@@ -24,16 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
   let isGameOver = false;
 
   const storedUser = localStorage.getItem('user');
-  if (storedUser) {
+  const storedToken = localStorage.getItem('token');
+
+  if (storedUser && storedToken) {
     try {
       const user = JSON.parse(storedUser);
       showGame(user);
     } catch (e) {
-      localStorage.removeItem('user');
-      showAuth();
+      doLogout();
     }
   } else {
     showAuth();
+  }
+
+  function doLogout() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    location.reload();
   }
 
   function showAuth() {
@@ -73,8 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(data)
       });
       const result = await res.json();
+
       if (res.ok) {
         localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem('token', result.token);
+
         showGame(result.user);
       } else {
         authMsg.textContent = result.message || "Login failed";
@@ -104,10 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('user');
-      location.reload();
-    });
+    logoutBtn.addEventListener('click', doLogout);
   }
 
   async function initGame() {
@@ -133,20 +140,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      const token = localStorage.getItem('token'); // Берем токен
+      if (!token) {
+        gameMsg.textContent = "Please login again";
+        return;
+      }
+
       const res = await fetch('/api/games', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
       const data = await res.json();
 
       if (res.ok) {
-        currentGameId = data.id; // Получаем ID из БД
+        currentGameId = data.id;
         console.log("Game ID:", currentGameId);
         gameMsg.textContent = "Guess the word!";
         document.removeEventListener('keydown', handleKey);
         document.addEventListener('keydown', handleKey);
       } else {
-        gameMsg.textContent = "Error starting game: " + data.message;
+        gameMsg.textContent = "Error: " + (data.message || "Could not start game");
+        if (res.status === 401) {
+          setTimeout(doLogout, 2000);
+        }
         isGameOver = true;
       }
     } catch (e) {
@@ -172,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentGuess.length < cols) {
       const tile = document.getElementById(`tile-${currentRow}-${currentGuess.length}`);
       tile.textContent = letter;
-      tile.setAttribute('data-state', 'active'); // CSS анимация
+      tile.setAttribute('data-state', 'active');
       currentGuess.push(letter);
     }
   }
@@ -188,16 +207,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function submitGuess() {
     if (currentGuess.length !== cols) {
-      shakeRow(); // Анимация тряски, если мало букв
+      shakeRow();
       return;
     }
 
     const guessWord = currentGuess.join("");
+    const token = localStorage.getItem('token');
 
     try {
       const res = await fetch(`/api/games/${currentGameId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // !!! ОТПРАВЛЯЕМ ТОКЕН !!!
+        },
         body: JSON.stringify({ guess: guessWord })
       });
 
