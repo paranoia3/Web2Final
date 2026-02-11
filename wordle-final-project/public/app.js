@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-  console.log("🚀 App Started");
+  console.log("🚀 App Started (Server Mode)");
 
-  // Ссылки на элементы
   const authCard = document.getElementById('authCard');
   const appCard = document.getElementById('appCard');
   const loginForm = document.getElementById('loginForm');
@@ -10,25 +9,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabRegister = document.getElementById('tabRegister');
   const authMsg = document.getElementById('authMsg');
 
-  // Игра
   const logoutBtn = document.getElementById('logoutBtn');
   const newGameBtn = document.getElementById('newGameBtn');
   const boardDiv = document.getElementById('board');
   const gameMsg = document.getElementById('gameMsg');
   const themeBtn = document.getElementById('themeToggle');
+  const userLine = document.getElementById('userLine');
 
-  // 1. Проверка входа
+  let currentGameId = null;
+  let currentRow = 0;
+  let currentGuess = [];
+  const rows = 6;
+  const cols = 5;
+  let isGameOver = false;
+
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     try {
       const user = JSON.parse(storedUser);
       showGame(user);
-    } catch (e) { localStorage.removeItem('user'); showAuth(); }
+    } catch (e) {
+      localStorage.removeItem('user');
+      showAuth();
+    }
   } else {
     showAuth();
   }
 
-  // 2. Функции переключения
   function showAuth() {
     authCard.classList.remove('hidden');
     appCard.classList.add('hidden');
@@ -38,21 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function showGame(user) {
     authCard.classList.add('hidden');
     appCard.classList.remove('hidden');
-    document.getElementById('userLine').textContent = `Player: ${user.username}`;
-
-    // ВАЖНО: Запуск игры с небольшой задержкой, чтобы успела отрисоваться карточка
-    setTimeout(initGame, 50);
+    userLine.textContent = `Player: ${user.username}`;
+    setTimeout(initGame, 100);
   }
 
-  // 3. Logout
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('user');
-      location.reload(); // Перезагружаем страницу для чистого выхода
-    });
-  }
-
-  // 4. Логика форм
   tabLogin.addEventListener('click', () => {
     loginForm.classList.remove('hidden');
     registerForm.classList.add('hidden');
@@ -81,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('user', JSON.stringify(result.user));
         showGame(result.user);
       } else {
-        authMsg.textContent = result.message;
+        authMsg.textContent = result.message || "Login failed";
         authMsg.style.color = 'red';
       }
     } catch (err) { console.error(err); }
@@ -97,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(data)
       });
       if (res.ok) {
-        authMsg.textContent = "Success! Login now.";
+        authMsg.textContent = "Registered! Please login.";
         authMsg.style.color = "green";
         setTimeout(() => tabLogin.click(), 1000);
       } else {
@@ -107,24 +103,22 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { console.error(err); }
   });
 
-  // 5. ИГРОВАЯ ЛОГИКА
-  const secretWord = "WORLD";
-  let currentRow = 0;
-  let currentTile = 0;
-  const rows = 6;
-  const cols = 5;
-  let guesses = [];
-  let isGameOver = false;
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('user');
+      location.reload();
+    });
+  }
 
-  function initGame() {
-    console.log("Game Init...");
+  async function initGame() {
+    console.log("Starting new game on server...");
+
     currentRow = 0;
-    currentTile = 0;
+    currentGuess = [];
     isGameOver = false;
-    guesses = Array(6).fill(null).map(() => Array(5).fill(""));
     gameMsg.textContent = "";
+    currentGameId = null;
 
-    // Строим сетку
     boardDiv.innerHTML = '';
     for (let r = 0; r < rows; r++) {
       const rowDiv = document.createElement('div');
@@ -138,68 +132,123 @@ document.addEventListener('DOMContentLoaded', () => {
       boardDiv.appendChild(rowDiv);
     }
 
-    document.removeEventListener('keydown', handleKey);
-    document.addEventListener('keydown', handleKey);
+    try {
+      const res = await fetch('/api/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        currentGameId = data.id; // Получаем ID из БД
+        console.log("Game ID:", currentGameId);
+        gameMsg.textContent = "Guess the word!";
+        document.removeEventListener('keydown', handleKey);
+        document.addEventListener('keydown', handleKey);
+      } else {
+        gameMsg.textContent = "Error starting game: " + data.message;
+        isGameOver = true;
+      }
+    } catch (e) {
+      console.error("Network error:", e);
+      gameMsg.textContent = "Network error";
+    }
   }
 
   function handleKey(e) {
     if (isGameOver) return;
     const key = e.key.toUpperCase();
-    if (key === 'ENTER') submitGuess();
-    else if (key === 'BACKSPACE') deleteLetter();
-    else if (key.length === 1 && key >= 'A' && key <= 'Z') addLetter(key);
+
+    if (key === 'ENTER') {
+      submitGuess();
+    } else if (key === 'BACKSPACE') {
+      deleteLetter();
+    } else if (key.length === 1 && key >= 'A' && key <= 'Z') {
+      addLetter(key);
+    }
   }
 
   function addLetter(letter) {
-    if (currentTile < cols && currentRow < rows) {
-      const tile = document.getElementById(`tile-${currentRow}-${currentTile}`);
+    if (currentGuess.length < cols) {
+      const tile = document.getElementById(`tile-${currentRow}-${currentGuess.length}`);
       tile.textContent = letter;
-      tile.classList.add('active');
-      guesses[currentRow][currentTile] = letter;
-      currentTile++;
+      tile.setAttribute('data-state', 'active'); // CSS анимация
+      currentGuess.push(letter);
     }
   }
 
   function deleteLetter() {
-    if (currentTile > 0) {
-      currentTile--;
-      const tile = document.getElementById(`tile-${currentRow}-${currentTile}`);
+    if (currentGuess.length > 0) {
+      currentGuess.pop();
+      const tile = document.getElementById(`tile-${currentRow}-${currentGuess.length}`);
       tile.textContent = '';
-      tile.classList.remove('active');
-      guesses[currentRow][currentTile] = '';
+      tile.removeAttribute('data-state');
     }
   }
 
-  function submitGuess() {
-    if (currentTile !== cols) return;
+  async function submitGuess() {
+    if (currentGuess.length !== cols) {
+      shakeRow(); // Анимация тряски, если мало букв
+      return;
+    }
 
-    const guess = guesses[currentRow].join("");
+    const guessWord = currentGuess.join("");
 
+    try {
+      const res = await fetch(`/api/games/${currentGameId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guess: guessWord })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        gameMsg.textContent = data.message;
+        shakeRow();
+        return;
+      }
+
+      revealRow(data.result);
+
+      setTimeout(() => {
+        if (data.status === 'won') {
+          gameMsg.textContent = "VICTORY! 🎉";
+          gameMsg.style.color = "#538d4e";
+          isGameOver = true;
+        } else if (data.status === 'lost') {
+          gameMsg.textContent = `GAME OVER. Word: ${data.secretWord}`;
+          gameMsg.style.color = "#ff4d4d";
+          isGameOver = true;
+        } else {
+          currentRow++;
+          currentGuess = [];
+          if (currentRow >= rows) {
+            isGameOver = true;
+          }
+        }
+      }, 500 * 5 + 100);
+
+    } catch (e) {
+      console.error("Guess error:", e);
+    }
+  }
+
+  function revealRow(resultColors) {
     for (let i = 0; i < cols; i++) {
       const tile = document.getElementById(`tile-${currentRow}-${i}`);
-      const letter = guess[i];
       setTimeout(() => {
         tile.classList.remove('active');
-        if (letter === secretWord[i]) tile.classList.add('correct');
-        else if (secretWord.includes(letter)) tile.classList.add('present');
-        else tile.classList.add('absent');
-      }, i * 200);
+        tile.removeAttribute('data-state');
+        tile.classList.add(resultColors[i]);
+      }, i * 250);
     }
+  }
 
-    if (guess === secretWord) {
-      gameMsg.textContent = "VICTORY! 🎉";
-      gameMsg.style.color = "#22c55e";
-      isGameOver = true;
-    } else {
-      if (currentRow >= rows - 1) {
-        gameMsg.textContent = "GAME OVER";
-        gameMsg.style.color = "red";
-        isGameOver = true;
-      } else {
-        currentRow++;
-        currentTile = 0;
-      }
-    }
+  function shakeRow() {
+    const row = document.querySelector(`#tile-${currentRow}-0`).parentElement;
+    row.classList.add('shake');
+    setTimeout(() => row.classList.remove('shake'), 500);
   }
 
   newGameBtn.addEventListener('click', initGame);

@@ -4,7 +4,6 @@ const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
 
-// Импорт модели
 const User = require('./src/models/User');
 
 const app = express();
@@ -15,14 +14,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Подключение к БД
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('✅ MongoDB Connected'))
     .catch(err => console.error('❌ DB Connection Error:', err));
 
-// --- API ROUTES ---
-
-// Регистрация
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -38,7 +33,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Логин
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -54,7 +48,6 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Любой другой запрос возвращает сайт
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

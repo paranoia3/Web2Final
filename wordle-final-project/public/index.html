@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wordle Game</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
@@ -13,9 +18,9 @@
   <div class="header-inner">
     <div class="brand">
       <div class="logo">W</div>
-      <h1>WORDLE GAME</h1>
+      <h1>WORDLE</h1>
     </div>
-    <button id="themeToggle" class="icon-btn">☀️</button>
+    <button id="themeToggle" class="icon-btn" title="Toggle Theme">◐</button>
   </div>
 </header>
 
@@ -23,8 +28,8 @@
 
   <section id="authCard" class="card">
     <div class="card-header">
-      <h2>Welcome</h2>
-      <p class="muted">Please login to play.</p>
+      <h2>Welcome Back</h2>
+      <p class="muted">Log in to track your stats.</p>
     </div>
 
     <div class="tabs">
@@ -35,27 +40,27 @@
     <form id="loginForm" class="form">
       <div class="input-group">
         <label>Email</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" placeholder="name@example.com" required>
       </div>
       <div class="input-group">
         <label>Password</label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" placeholder="•••••••" required>
       </div>
-      <button type="submit" class="btn-primary">Login</button>
+      <button type="submit" class="btn-primary">Sign In</button>
     </form>
 
     <form id="registerForm" class="form hidden">
       <div class="input-group">
         <label>Username</label>
-        <input type="text" name="username" required>
+        <input type="text" name="username" placeholder="PlayerOne" required>
       </div>
       <div class="input-group">
         <label>Email</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" placeholder="name@example.com" required>
       </div>
       <div class="input-group">
         <label>Password</label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" placeholder="Create a password" required>
       </div>
       <button type="submit" class="btn-primary">Create Account</button>
     </form>
@@ -64,23 +69,24 @@
 
   <section id="appCard" class="card hidden">
     <div class="game-header-row">
-      <div>
+      <div class="user-info">
         <h2>Play</h2>
         <p id="userLine" class="muted">Player: ...</p>
       </div>
-      <button id="logoutBtn" class="btn-ghost">Logout ➜</button>
+      <button id="logoutBtn" class="btn-ghost">Logout</button>
     </div>
 
     <div class="toolbar">
+      <span id="gameStatus" class="pill">Playing...</span>
       <button id="newGameBtn" class="btn-secondary">New Game</button>
-      <span class="pill" id="gameStatus">Playing...</span>
     </div>
 
     <div class="board-wrap">
-      <div id="board" class="board"></div>
+      <div id="board" class="board">
+      </div>
     </div>
 
-    <p class="muted" style="text-align: center;">Type on keyboard</p>
+    <p class="muted keyboard-hint">Type using your keyboard</p>
     <p id="gameMsg" class="msg"></p>
   </section>
 
